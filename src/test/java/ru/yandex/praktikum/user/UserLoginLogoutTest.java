@@ -1,5 +1,6 @@
 package ru.yandex.praktikum.user;
 
+import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,15 +11,14 @@ import ru.yandex.praktikum.api.UserClient;
 import ru.yandex.praktikum.constants.RandomData;
 import org.apache.commons.lang3.StringUtils;
 import io.restassured.response.ValidatableResponse;
-import static org.apache.http.HttpStatus.SC_OK;
-import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
+
+import static org.apache.http.HttpStatus.*;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 @Epic("Login and logout user")
 public class UserLoginLogoutTest {
-    private static final String MESSAGE_LOGOUT = "Successful logout";
-    private static final String MESSAGE_UNAUTHORIZED = "email or password are incorrect";
     private ValidatableResponse response;
     private UserClient userClient;
     private User user;
@@ -34,13 +34,12 @@ public class UserLoginLogoutTest {
     public void clearState() {
         userClient.deleteUser(StringUtils.substringAfter(accessToken, " "));
     }
-
     @Test
     @DisplayName("User login by valid credentials")
     public void userLoginByValidCredentials() {
         response = userClient.createUser(user);
         accessToken = response.extract().path("accessToken");
-        response = userClient.loginUser(user, accessToken);
+        response = userClient.loginUserByValidCredentials(user, accessToken);
         int statusCode = response.extract().statusCode();
         boolean isLogin = response.extract().path("success");
 
@@ -54,17 +53,17 @@ public class UserLoginLogoutTest {
     public void userLogoutByValidCredentials() {
         response = userClient.createUser(user);
         accessToken = response.extract().path("accessToken");
-        response = userClient.loginUser(user, accessToken);
+        response = userClient.loginUserByValidCredentials(user, accessToken);
         String refreshToken = response.extract().path("refreshToken");
         refreshToken = "{\"token\":\"" + refreshToken + "\"}";
-        response = userClient.logoutUser(refreshToken);
+        response = userClient.logoutUserByValidCredentials(refreshToken);
         int statusCode = response.extract().statusCode();
         String message = response.extract().path("message");
         boolean isLogout = response.extract().path("success");
 
         assertThat("Token is null", refreshToken, notNullValue());
         assertThat("Code not equal", statusCode, equalTo(SC_OK));
-        assertThat("Message not equal", message, equalTo(MESSAGE_LOGOUT));
+        assertThat("Message not equal", message, equalTo("Successful logout"));
         assertThat("User is logout incorrect", isLogout, equalTo(true));
     }
 
@@ -74,14 +73,14 @@ public class UserLoginLogoutTest {
         response = userClient.createUser(user);
         accessToken = response.extract().path("accessToken");
         user.setEmail(null);
-        response = userClient.loginUser(user, accessToken);
+        response = userClient.loginUserByValidCredentials(user, accessToken);
         int statusCode = response.extract().statusCode();
         String message = response.extract().path("message");
         boolean isLogin = response.extract().path("success");
 
         assertThat("Token is null", accessToken, notNullValue());
         assertThat("Code not equal", statusCode, equalTo(SC_UNAUTHORIZED));
-        assertThat("Message not equal", message, equalTo(MESSAGE_UNAUTHORIZED));
+        assertThat("Message not equal", message, equalTo("email or password are incorrect"));
         assertThat("User is login correct", isLogin, equalTo(false));
     }
 
@@ -91,14 +90,14 @@ public class UserLoginLogoutTest {
         response = userClient.createUser(user);
         accessToken = response.extract().path("accessToken");
         user.setPassword(null);
-        response = userClient.loginUser(user, accessToken);
+        response = userClient.loginUserByValidCredentials(user, accessToken);
         int statusCode = response.extract().statusCode();
         String message = response.extract().path("message");
         boolean isLogin = response.extract().path("success");
 
         assertThat("Token is null", accessToken, notNullValue());
         assertThat("Code not equal", statusCode, equalTo(SC_UNAUTHORIZED));
-        assertThat("Message not equal", message, equalTo(MESSAGE_UNAUTHORIZED));
+        assertThat("Message not equal", message, equalTo("email or password are incorrect"));
         assertThat("User is login correct", isLogin, equalTo(false));
     }
 }

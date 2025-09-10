@@ -1,5 +1,6 @@
 package ru.yandex.praktikum.user;
 
+import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +40,7 @@ public class UserUpdateTest {
     public void updateUserByAuthorization() {
         response = userClient.createUser(user);
         accessToken = response.extract().path("accessToken");
-        response = userClient.loginUser(user, accessToken);
+        Response responseLoginUser = userClient.loginUser(user, accessToken);
         response = userClient.updateUserByAuthorization(RandomData.getRandomData(), accessToken);
         int statusCode = response.extract().statusCode();
         boolean isUpdate = response.extract().path("success");

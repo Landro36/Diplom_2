@@ -1,5 +1,6 @@
 package ru.yandex.praktikum.user;
 
+import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,7 +37,7 @@ public class UserGetTest {
     public void userGetByValidCredentials() {
         ValidatableResponse response = userClient.createUser(user);
         accessToken = response.extract().path("accessToken");
-        response = userClient.getUser(accessToken);
+        response = userClient.getUserByValidCredentials(accessToken);
         int statusCode = response.extract().statusCode();
         boolean isGet = response.extract().path("success");
         String email = response.extract().path("user.email");

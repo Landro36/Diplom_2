@@ -1,93 +1,73 @@
 package ru.yandex.praktikum.order;
 
+import io.qameta.allure.Epic;
 import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import java.util.List;
 import org.junit.jupiter.api.Test;
-import io.qameta.allure.Epic;
-import ru.yandex.praktikum.entity.User;
-import ru.yandex.praktikum.entity.Order;
-import ru.yandex.praktikum.api.UserClient;
 import ru.yandex.praktikum.api.OrderClient;
+import ru.yandex.praktikum.api.UserClient;
 import ru.yandex.praktikum.constants.RandomData;
-import org.apache.commons.lang3.StringUtils;
-import io.restassured.response.ValidatableResponse;
-import static org.apache.http.HttpStatus.SC_OK;
-import static org.apache.http.HttpStatus.SC_UNAUTHORIZED;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import ru.yandex.praktikum.entity.Order;
+import ru.yandex.praktikum.entity.User;
+import java.util.List;
 
 @Epic("Get order and ingredients")
 public class OrderGetTest {
-    private static final String MESSAGE_UNAUTHORIZED = "You should be authorised";
     private ValidatableResponse response;
     private User user;
     private Order order;
-    private UserClient userClient;
-    private OrderClient orderClient;
+    private UserClient userClient1;
+    private OrderClient orderClient1;
 
     @BeforeEach
     public void setUp() {
         user = RandomData.getRandomData();
         order = new Order();
-        userClient = new UserClient();
-        orderClient = new OrderClient();
+        userClient1 = new UserClient();
+        orderClient1 = new OrderClient();
         fullListIngredients();
     }
 
     @Test
     @DisplayName("Get all ingredients")
     public void getAllIngredients() {
-        Response responseGetAllIngredients = orderClient.getAllIngredients();
-        orderClient.checkAllIngredients(responseGetAllIngredients);
+        Response responseGetAllIngredients = orderClient1.getAllIngredients();
+        orderClient1.checkAllIngredients(responseGetAllIngredients);
     }
 
     @Test
     @DisplayName("Get all orders")
     public void getAllOrders() {
-        response = orderClient.createOrderWithoutAuthorization(order);
-        response = orderClient.getAllOrders();
-        int statusCode = response.extract().statusCode();
-        boolean isGet = response.extract().path("success");
-
-        assertThat("Code not equal", statusCode, equalTo(SC_OK));
-        assertThat("Orders is get incorrect", isGet, equalTo(true));
-
+        Response responseCreateOrderWithoutAuthorization = orderClient1.createOrderWithoutAuthorization(order);
+        Response responseGetAllOrders = orderClient1.getAllOrders();
+        orderClient1.checkAllOrders(responseGetAllOrders);
     }
 
     @Test
     @DisplayName("Get order by authorization user")
     public void getOrderByAuthorizationUser() {
-        response = userClient.createUser(user);
+        response = userClient1.createUser(user);
         String accessToken = response.extract().path("accessToken");
-        response = userClient.loginUser(user, accessToken);
-        response = orderClient.createOrderByAuthorization(order, accessToken);
-        response = orderClient.getOrdersByAuthorization(accessToken);
-        int statusCode = response.extract().statusCode();
-        boolean isGet = response.extract().path("success");
-        response = userClient.deleteUser(StringUtils.substringAfter(accessToken, " "));
-
-        assertThat("Code not equal", statusCode, equalTo(SC_OK));
-        assertThat("Order is get incorrect", isGet, equalTo(true));
+        Response responseLoginUser = userClient1.loginUser(user, accessToken);
+        Response responseCreateOrderByAuthorization = orderClient1.createOrderByAuthorization(order, accessToken);
+        Response responseGetOrdersByAuthorization = orderClient1.getOrdersByAuthorization(accessToken);
+        orderClient1.checkGetOrdersByAuthorization(responseGetOrdersByAuthorization);
+        response = userClient1.deleteUser(StringUtils.substringAfter(accessToken, " "));
     }
 
     @Test
     @DisplayName("Get order without authorization user")
     public void getOrderWithoutAuthorizationUser() {
-        response = orderClient.createOrderWithoutAuthorization(order);
-        response = orderClient.getOrdersWithoutAuthorization();
-        int statusCode = response.extract().statusCode();
-        String message = response.extract().path("message");
-        boolean isGet = response.extract().path("success");
-
-        assertThat("Code not equal", statusCode, equalTo(SC_UNAUTHORIZED));
-        assertThat("Message not equal", message, equalTo(MESSAGE_UNAUTHORIZED));
-        assertThat("Order is get correct", isGet, equalTo(false));
+        Response responseCreateOrderWithoutAuthorization = orderClient1.createOrderWithoutAuthorization(order);
+        Response responseGetOrdersWithoutAuthorization = orderClient1.getOrdersWithoutAuthorization();
+        orderClient1.checkGetOrdersWithoutAuthorization(responseGetOrdersWithoutAuthorization);
     }
 
     private void fullListIngredients() {
-        response = orderClient.getAllIngredientsFullList();
+        response = orderClient1.getAllIngredientsFullList();
         List<String> list = response.extract().path("data._id");
         List<String> ingredients = order.getIngredients();
         ingredients.add(list.get(0));
